@@ -1,0 +1,130 @@
+function [A]=matrixTask4(m);
+
+    A = randi(6, m, m) - 1;
+    A = A - tril(A, -1) + triu(A, 1)';
+    
+end
+
+function [Q, R, d] = getQR(A);
+
+[m, n] = size(A);
+Q = zeros(m, n);
+R = zeros(n, n);
+d = zeros(1, n);
+
+for i=1:n
+    Q(:, i) = A(:, i);
+    R(i, i) = 1;
+    d(i) = Q(:, i)' * Q(:, i);
+    
+    for j=i+1:n
+        R(i, j) = (Q(:, i)' * A(:, j)) / d(i);
+        A(:, j) = A(:, j) - R(i,j) * Q(:, i);
+    end
+    
+    for i = 1:n
+        dd = norm(Q(:, i));
+        Q(:, i) = Q(:, i) / dd;
+        R(i, i:n) = R(i, i:n) * dd;
+    end
+    
+end
+
+end
+
+function [x1, x2] = getRoots(a, b, c)
+
+delta = b*b - 4*a*c;
+
+x1 = (-b + sqrt(delta))/(2*a);
+x2 = (-b - sqrt(delta))/(2*a);
+
+end
+
+function [A, eigenvalues, iterations, convergenceRatio] = GSNoShifts(A)
+
+A = hess(A);
+tol = 10^(-6);
+
+imax = 100;
+n = size(A, 1);
+i = 1;
+
+while i <= imax & max(max(A - diag(diag(A)))) > tol
+    [Q1, R1] = getQR(A);
+    A = R1 * Q1;
+    i = i + 1;
+end
+
+iterations = i;
+eigenvalues = diag(A);
+eigenvalues = sort(eigenvalues);
+convergenceRatio = abs(eigenvalues(n-1)/eigenvalues(n));
+end
+
+function [eigenvalues, iterations, shift,convergenceRatio] = GSWithShifts(A)
+
+A = hess(A);
+tol = 10^(-6);
+
+imax = 100;
+n = size(A, 1);
+
+eigenvalues = diag(ones(n));
+initialsubA = A;
+
+for k = n:-1:2
+    DK = initialsubA;
+    i = 0;
+    while i <= imax & max(abs(DK(k,1:k-1))) > tol
+        DD = DK(k-1:k,k-1:k);
+        [ev1, ev2] = getRoots(1, -(DD(1,1)+DD(2,2)), DD(2,2)*DD(1,1)-DD(2,1)*DD(1,2));
+        if abs(ev1 - DD(2,2)) < abs(ev2 - DD(2,2))
+            shift = ev1;
+        else
+            shift = ev2;
+        end
+        DP = DK - eye(k)*shift;
+        [Q1,R1] = getQR(DP);
+        DK = R1*Q1 + eye(k)*shift;
+        i = i+1;
+    end
+    
+    eigenvalues(k) = DK(k,k);
+    convergenceRatio = abs((eigenvalues(k) - shift) / (eigenvalues(k-1) - shift));
+    
+    if k > 2
+        initialsubA = DK(1:k-1, 1:k-1);
+    else
+        eigenvalues(1) = DK(1,1);
+    end
+end
+
+eigenvalues = sort(eigenvalues);
+iterations = i;
+
+end
+
+function [A,newANoShifts]=ShiftsVsNoShifts()
+
+[A] = matrixTask4(5);
+
+[newANoShifts,eigenvaluesNoShift, iterationsNoShift, convergenceRatioNoShift] = GSNoShifts(A);
+[eigenvaluesWithShift, iterationsWithShift, shift,convergenceRatioWithShift] = GSWithShifts(A);
+
+ disp("Eigenvalues calculated with QR method without shifts:")    
+ disp(eigenvaluesNoShift)    
+ disp("Iterations: " + iterationsNoShift)    
+ disp("The convergence ratio: " + convergenceRatioNoShift)    
+ disp("Eigenvalues calculated with QR method with shifts:")    
+ disp(eigenvaluesWithShift)    
+ disp("Iterations: " + iterationsWithShift)    
+ disp("The shift: " + shift)    
+ disp("The convergence ratio: " + convergenceRatioWithShift)        
+   
+ matlabEV = eig(A);    
+ disp("Eigenvalues calculated using Matlab's function 'eig':")    
+ disp(matlabEV) 
+
+ 
+end
