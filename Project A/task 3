@@ -1,0 +1,126 @@
+
+function [A,b]=matrixTask3;
+
+A = [8 2 -3 1; 2 -25 5 -18; 1 3 15 -8; 1 1 -2 -10];
+b = [7; 12; 24; 28];
+
+end
+
+function [L, D, U] = decompose(A);
+%decomposition of the matrix A = L + D + U
+
+L = tril(A);
+for i = 1:size(A)
+    L(i, i) = 0;
+end
+
+D = diag(diag(A));
+
+U = triu(A);
+for i = 1:size(A)
+    U(i, i) = 0;
+end
+end
+
+function [sr] = getSpectralRadiusJacobi(L, D, U);
+
+M = -inv(D)*(L+U);
+sr = max(abs(eig(M)));
+
+end
+
+function [sr, x, errors, iterations] = JacobiMethod(A, b);
+
+[L, D, U] = decompose(A);
+[sr] = getSpectralRadiusJacobi(L, D, U);
+
+sizeA = size(A);
+%initial solution matrix filled with zeros
+x = zeros(sizeA(1), 1);
+
+solutionError = inf;
+lambda = 10^(-10);
+
+i = 1; 
+imax = 100;
+while solutionError > lambda && i < imax
+    currentx = D\(b - A*x);
+    x = x + currentx;
+    
+    solutionError = norm(A*x - b);
+    
+    errors(i) = solutionError;
+    iterations(i) = i;
+    i = i + 1;
+end
+    
+if i >= imax
+    disp("Maximal number of iterations reached");
+end
+
+errors = errors';
+iterations = iterations';
+
+end
+
+function [srM] = getSpectralRadiusGaussSeidel(L, D, U);
+
+M = -U/(D+L);
+srM = max(abs(eig(M)));
+
+end
+
+function [sr, x, errors, iterations] = GaussSeidelMethod(A, b);
+
+[L, D, U] = decompose(A);
+[sr] = getSpectralRadiusGaussSeidel(L, D, U);
+
+sizeA = size(A);
+%initial solution matrix filled with zeros
+x = zeros(sizeA(1), 1);
+
+D = diag(A);
+
+Error = inf;
+lambda = 10^(-10);
+
+i = 1;
+imax = 100;
+
+while Error > lambda && i < imax
+    
+    for k = 1:size(x)
+        newx = x;
+        
+        for j = 1:size(x)
+            newx(j) = newx(j) * A(k,j);
+        end
+        
+        x(k) = (b(k) - (sum(newx) - newx(k)))/D(k);
+    end
+    
+    Error = norm(A*x - b);
+    errors(i) = Error;
+    iterations(i) = i;
+    i = i + 1;
+end
+
+errors = errors';
+iterations = iterations';
+
+end
+
+function plotJacobiVSGauss(A, b);
+
+[sr, x, errorsJ, iterationsJ] = JacobiMethod(A, b)
+[sr, x, errorsGS, iterationsGS] = GaussSeidelMethod(A, b)
+
+plot(iterationsJ, errorsJ, ':og')
+hold on
+plot(iterationsGS, errorsGS, ':+r')
+legend("Jacobi method", "Gauss-Seidel method");
+xlabel("Iterations");
+ylabel("Solution error");
+hold off;
+
+end
