@@ -1,0 +1,16 @@
+function [x]=backSubstitution(Aech);
+n = size(Aech,1);
+x = zeros(1,n);
+NewA = Aech(:, 1:end-1);
+NewB = Aech(:, end);
+
+for i = 1:n
+    k = n-i+1; 
+    sum = 0;
+    for j = k+1:n
+        sum = sum + Aech(k, j)*x(j);
+    end
+    x(k) = (NewB(k) - sum) / NewA(k,k);
+end
+x = x';
+end
