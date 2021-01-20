@@ -1,0 +1,15 @@
+function MachineEpsilon
+format long;
+
+macheps = 1.0;
+while((1.0 + (macheps/2.0)) > 1.0)
+    macheps = macheps/2.0;
+end
+
+disp("Calculated machine epsilon: ")
+disp(macheps)
+
+disp("Matlab's machine epsilon value: ")
+disp(eps)
+
+end
