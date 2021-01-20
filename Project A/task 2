@@ -1,0 +1,175 @@
+%=============TASK 2 DATA==============
+
+function [A,b] = matrixesInA(n)
+format short;
+
+for i=1:n
+    for j=1:n
+        if i==j
+            A(i,j) = 9;
+        elseif i==(j-1) || i==(j+1)
+            A(i,j) = 1;       
+        else
+            A(i,j) = 0;
+        end
+    end
+end
+    
+for i=1:n
+    b(i,1)=1.4+0.6*i;
+end
+end
+
+
+function [A,b] = matrixesInB(n)
+format short;
+
+for i=1:n
+    for j=1:n
+        A(i,j) = 3/(4*(i+j-1));
+    end
+end
+    
+for i=1:n
+    if mod(i,2) == 0;
+        b(i,1)=1/i;
+    else 
+        b(i,1)=0;
+    end
+end
+end
+
+%=========TASK 2 NEEDED FUNCTIONS===========
+
+function [Aaug]=AugmentedMatrixWithPP(A,b);
+Aaug = [A,b];
+n = size(A,1);
+
+for k = 1:n
+   i = k;
+   for j = i+1:n
+       if (Aaug(j,i)> Aaug(i, j))
+           i = j;
+       end
+   end
+   if k~=i
+       Aaug([k i],:) = Aaug([i k],:);
+   end
+end
+end
+
+
+function [Aech]=RowEchelonForm(Aaug);
+n = size(Aaug,1);
+Aech = Aaug;
+
+for k = 1:n
+    for j = k+1:n        
+        rowMultiple = Aech(j, k) / Aech(k, k);        
+        Aech(j, :) = Aech(j, :) - Aech(k, :)*rowMultiple;    
+    end
+end
+end
+
+function [x]=backSubstitution(Aech);
+n = size(Aech,1);
+x = zeros(1,n);
+NewA = Aech(:, 1:end-1);
+NewB = Aech(:, end);
+
+for i = 1:n
+    k = n-i+1; 
+    sum = 0;
+    for j = k+1:n
+        sum = sum + Aech(k, j)*x(j);
+    end
+    x(k) = (NewB(k) - sum) / NewA(k,k);
+end
+x = x';
+end
+
+function [residuum]=calculateResiduum(A,b,x);
+residuum = A*x - b;
+end
+
+function [residuumEuclidean]=calculateEuclideanNorm(residuum);
+norm = 0;
+for i = 1:size(residuum)
+    norm = norm +(residuum(i)*residuum(i));
+end
+residuumEuclidean = sqrt(norm);
+end
+
+function [finalResiduum, newx]=improvedResiduum(A,b,x,residuum);
+residuum = residuum';
+deltax = residuum/A;
+deltax = deltax';
+newx = x - deltax;
+finalResiduum = A*newx - b;
+end
+
+function [x, residuumEuclideanNorm, finalResiduumEuclideanNorm] = solveGaussianEPP(n);
+[A,b]=matrixesInA(n);
+%[A,b] = matrixesInB(n);
+[Aaug]=AugmentedMatrixWithPP(A,b);
+[Aech]=RowEchelonForm(Aaug);
+[x]=backSubstitution(Aech);
+[residuum]=calculateResiduum(A,b,x);
+[residuumEuclideanNorm]=calculateEuclideanNorm(residuum);
+[finalResiduum, newx]=improvedResiduum(A,b,x,residuum);
+[finalResiduumEuclideanNorm]=calculateEuclideanNorm(finalResiduum)
+end
+
+function plotResiduum(iterations);
+n = 10;
+
+for i = 1 :  iterations
+    [~, residuumEuclideanNorm, ~] = solveGaussianEPP(n);
+    numberOfEquations(i) = n;
+    errors(i) = residuumEuclideanNorm;
+    n = n*2;
+end
+
+plot(numberOfEquations, errors, "or")
+xlabel("Number of equations");
+ylabel("Solution error before improvement");
+
+end
+
+function plotCorrectedResiduum;
+%[A,b]=matrixesInA(10);
+[A,b] = matrixesInB(40);
+[Aaug]=AugmentedMatrixWithPP(A,b);
+[Aech]=RowEchelonForm(Aaug);
+[x]=backSubstitution(Aech);
+[residuum]=calculateResiduum(A,b,x);
+[residuumEuclideanNorm]=calculateEuclideanNorm(residuum);
+
+first = 0;
+plot(first,residuumEuclideanNorm,"or");
+hold on;
+
+%make the corrected residuum in a loop and transform it into Euclidean norm
+norm = 0;
+for j = 1:1:10
+    residuum = residuum';
+    deltax = residuum/A;
+    deltax = deltax';
+    newx = x - deltax;
+    residuum = A*newx - b;
+    
+    for i = 1:size(residuum)
+        norm = norm +(residuum(i)*residuum(i));
+    end
+    residuumEuclidean(j) = sqrt(norm);
+    iteration(j) = j;
+    ;
+    
+end
+
+plot(iteration, residuumEuclidean,"or");
+hold off;
+xlabel("Number of iterations");
+ylabel("Corrected solution error");
+
+end
