@@ -1,0 +1,19 @@
+function [A,b] = matrixesInA(n)
+format short;
+
+for i=1:n
+    for j=1:n
+        if i==j
+            A(i,j) = 9;
+        elseif i==(j-1) || i==(j+1)
+            A(i,j) = 1;       
+        else
+            A(i,j) = 0;
+        end
+    end
+end
+    
+for i=1:n
+    b(i,1)=1.4+0.6*i;
+end
+end
