@@ -1,0 +1,16 @@
+function [Aaug]=AugmentedMatrixWithPP(A,b);
+Aaug = [A,b];
+n = size(A,1);
+
+for k = 1:n
+   i = k;
+   for j = i+1:n
+       if (Aaug(j,i)> Aaug(i, j))
+           i = j;
+       end
+   end
+   if k~=i
+       Aaug([k i],:) = Aaug([i k],:);
+   end
+end
+end
