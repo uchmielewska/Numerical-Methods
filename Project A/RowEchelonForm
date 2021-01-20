@@ -1,0 +1,11 @@
+function [Aech]=RowEchelonForm(Aaug);
+n = size(Aaug,1);
+Aech = Aaug;
+
+for k = 1:n
+    for j = k+1:n        
+        rowMultiple = Aech(j, k) / Aech(k, k);        
+        Aech(j, :) = Aech(j, :) - Aech(k, :)*rowMultiple;    
+    end
+end
+end
