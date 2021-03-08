@@ -1,0 +1,125 @@
+close all
+clear
+clc
+
+%TASK1
+%runNewton
+runFalsePosition
+
+function [root, iterations] = newton(f, x0, x1, tolerance, imax)
+
+hold on
+plot(x0, f(x0), 'go')
+plot(x1, f(x1), 'bo')
+grid on
+
+root = (x0 + x1)/2;
+iterations = 0;
+
+%derivative of f(x)
+syms x
+dfdx = eval(['@(x)' char(diff(f(x)))]);
+
+for i = 1:imax
+    root = root - (f(root)/dfdx(root))
+    iterations = iterations + 1
+    f(root)
+    
+    if abs(f(root)) <= tolerance
+        break;
+    end
+end
+
+plot(root, f(root), 'r*')
+legend('left subinterval', 'right subinterval', 'root')
+hold off
+
+end
+
+function runNewton
+f = @(x)0.5*x*cos(x) - log(x);
+
+imax = 20;
+[root2, it2] = newton(f, 5, 6, 10e-9, imax);
+[root3, it3] = newton(f, 6.6, 11, 10e-9, imax);
+
+hold on
+fplot(f, [2, 11])
+title("Newton's method")
+hold off
+
+end
+
+function [root, iterations] = falsePosition(f, a, b, tolerance, imax)
+
+hold on
+plot(a, f(a), 'go')
+plot(b, f(b), 'bo')
+grid on
+
+c = 0;
+iterations = 0;
+
+for i = 1:imax
+
+    c = (a*f(b)-b*f(a))/(f(b)-f(a))
+    iterations = iterations + 1
+    f(c)
+    
+    if c > 0
+       b = c;
+    else
+       a = c;
+    end
+    
+    if abs(f(c)) <= tolerance
+        break;
+    end
+    
+end
+root = c;
+
+plot(root, f(root), 'r*')
+legend('left subinterval', 'right subinterval', 'root')
+hold off
+
+end
+
+function runFalsePosition
+f = @(x)0.5.*x.*cos(x) - log(x);
+
+imax = 100;
+[root2, it2] = falsePosition(f, 5, 6, 10e-9, imax);
+[root3, it3] = falsePosition(f, 7, 8, 10e-9, imax);
+
+hold on
+fplot(f, [2,11])
+title("False Position method")
+hold off
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
