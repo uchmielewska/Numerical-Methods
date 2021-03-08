@@ -1,0 +1,268 @@
+close all
+clear
+clc
+
+%TASK 2
+runMM1
+runMM2
+
+function [root, iterations] = MM1(f, x0, x1, x2, tolerance, imax)
+
+iterations = 0;
+c = 1;
+
+while abs(c) > tolerance && x0 ~= x1 && x1 ~= x2 && iterations < imax
+    
+    z0 = x0 - x2;
+    z1 = x1 - x2;
+
+    c = f(x2);
+    b = (f(x2)*(z1 + z0)*(z1 - z0) + z0*z0*f(x1) - z1*z1*f(x0))/((z0 - z1) * z0 * z1);
+    a = (f(x0) - f(x2) - b*z0)/(z0*z0);
+    
+    delta = b*b - 4*a*c;
+    
+    if abs(b + sqrt(delta)) >= abs(b - sqrt(delta))
+        root = x2 - (2*c)/(b + sqrt(b*b - 4*a*c));
+    else
+        root = x2 - (2*c)/(b - sqrt(b*b - 4*a*c));
+    end
+
+    new0 = abs(root - x0);
+    new1 = abs(root - x1);
+    new2 = abs(root - x2);
+    
+    if new0 >= new1 && new0 >= new2
+        x0 = x2;
+        x2 = root;
+    elseif new1 >= new0 && new1 >= new2
+        x1 = x2;
+        x2 = root;
+    elseif new2 >= new0 && new2 >= new1
+        x2 = root;
+    end
+    iterations = iterations + 1
+    root
+    f(root)
+end    
+end
+
+function runMM1
+P = [2 5 -2 3 7];
+f = @(x)P(1)*x^4 + P(2)*x^3 + P(3)*x^2 + P(4)*x + P(5);
+
+imax = 10;
+
+hold on;
+fplot(f)
+grid on
+xlim([-5, 3])
+ylim([-100, 600])
+
+x0 = 0;
+x1 = 1.1i;
+x2 = 0.8i;
+[root1, it1] = MM1(f, x0, x1, x2, 10e-9, imax);
+plot(x0, f(x0), 'g.')
+plot(root1, f(root1), 'r*')
+plot(x1, f(x1), 'g.')
+plot(x2, f(x2), 'g.')
+
+
+x0 = 0;
+x1 = -1.1i;
+x2 = -0.8i;
+[root2, it2] = MM1(f, x0, x1, x2, 10e-9, imax);
+plot(x0, f(x0), 'g.')
+plot(x1, f(x1), 'g.')
+plot(x2, f(x2), 'g.')
+plot(root2, f(root2), 'r*')
+
+x0 = -3.1;
+x1 = -3;
+x2 = -2.5;
+[root3, it3] = MM1(f, x0, x1, x2, 10e-9, imax);
+plot(x0, f(x0), 'g.')
+plot(x1, f(x1), 'g.')
+plot(x2, f(x2), 'g.')
+plot(root3, f(root3), 'r*')
+
+x0 = -1.1;
+x1 = -1;
+x2 = -0.8;
+[root4, it4] = MM1(f, x0, x1, x2, 10e-9, imax);
+plot(x0, f(x0), 'g.')
+plot(x1, f(x1), 'g.')
+plot(x2, f(x2), 'g.')
+plot(root4, f(root4), 'r*')
+
+title("MM1 method")
+legend('2x^4 + 5x^3 - 2x^2 + 3x + 7');
+hold off;
+
+figure(2)
+hold on
+plot(real(root1), imag(root1), 'r*')
+plot(0, f(0), 'g.')
+plot(1.1i, f(1.1i), 'g.')
+plot(0.8i, f(0.8i), 'g.')
+
+plot(real(root2), imag(root2), 'r*')
+plot(0, f(0), 'g.')
+plot(-1.1i, f(-1.1i), 'g.')
+plot(-0.8i, f(-0.8i), 'g.')
+xlabel('Re(f)');
+ylabel('Im(f)');
+title('Imaginary roots using MM1')
+grid on;
+hold off
+
+
+end
+    
+
+function [xk, iterations] = MM2(P, xk, tolerance, imax)
+
+iterations = 0;
+dP = polyder(P);
+ddP = polyder(dP);
+    
+c = 1;
+
+while abs(c) > tolerance && iterations < imax
+    
+    a = polyval(ddP, xk)/2;
+    b = polyval(dP, xk);
+    c = polyval(P, xk);
+    
+    delta = b*b - 4*a*c;
+    root1 = -2*c/(b+sqrt(delta));
+    root2 = -2*c/(b-sqrt(delta));
+    
+    if abs(root1) <= abs(root2)
+        zmin = root1;
+    else
+        zmin = root2;
+    end
+    
+    xk = zmin +xk;
+    iterations = iterations +1
+    xk
+    polyval(P, xk)
+    
+   
+end
+
+end
+
+function runMM2
+P = [2 5 -2 3 7];
+f = @(x)P(1)*x^4 + P(2)*x^3 + P(3)*x^2 + P(4)*x + P(5);
+
+imax = 10;
+
+hold on
+fplot(f)
+grid on
+xlim([-5, 3])
+ylim([-100, 600])
+
+xk = -3;
+[root1, it1] = MM2(P, xk, 10e-9, imax);
+plot(xk, f(xk), 'g.')
+plot(root1, f(root1), 'r*')
+disp("root: " + root1)
+disp("iterations: " + it1)
+
+xk = -1;
+[root2, it2] = MM2(P, xk, 10e-9, imax);
+plot(xk, f(xk), 'g.')
+plot(root2, f(root2), 'r*')
+disp("root: " + root2)
+disp("iterations: " + it2)
+
+xk = -1i;
+[root3, it3] = MM2(P, xk, 10e-9, imax);
+plot(xk, f(xk), 'g.')
+plot(root3, f(root3), 'r*')
+disp("root: " + root3)
+disp("iterations: " + it3)
+
+xk = 1i;
+[root4, it4] = MM2(P, xk, 10e-9, imax);
+plot(xk, f(xk), 'g.')
+plot(root4, f(root4), 'r*')
+disp("root: " + root4)
+disp("iterations: " + it4)
+
+title("MM2 method")
+legend('initial points', 'roots', '2x^4 + 5x^3 - 2x^2 + 3x + 7');
+hold off;
+
+figure(2)
+hold on
+plot(real(root3), imag(root3), 'r*')
+plot(-1i, 'g.')
+plot(real(root4), imag(root4), 'r*')
+plot(1i, 'g.')
+xlabel('Re(f)');
+ylabel('Im(f)');
+title('Imaginary roots using MM2')
+grid on;
+hold off
+
+end
+
+    
+function [root, iterations] = modifiedNewton(f, x, tolerance, imax)
+
+hold on
+plot(x, f(x), 'b.')
+grid on
+
+root = x;
+iterations = 0;
+
+syms x
+dfdx = eval(['@(x)' char(diff(f(x)))]);
+
+
+for i = 1:imax
+    root = root - (f(root)/dfdx(root))
+    iterations = iterations + 1
+    f(root)
+    
+    if abs(f(root)) <= tolerance
+        break;
+    end
+end
+
+plot(root, f(root), 'r*')
+legend('initial points', 'root')
+hold off
+
+end
+    
+function runModifiedNewton
+P = [2 5 -2 3 7];
+f = @(x)P(1)*x^4 + P(2)*x^3 + P(3)*x^2 + P(4)*x + P(5);
+
+imax = 50;
+
+[root1, it1] = modifiedNewton(f, -1, 10e-9, imax);
+[root2, it2] = modifiedNewton(f, -3, 10e-9, imax);
+
+hold on
+fplot(f, [-5, 3])
+title("Newton's method")
+grid on
+hold off
+
+end
+    
+    
+    
+    
+    
+    
+    
