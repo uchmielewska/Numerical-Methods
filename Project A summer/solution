@@ -1,0 +1,103 @@
+close all
+clear
+clc
+
+%===========================TASK 1===========================
+
+syms x y z v
+z=(x+sin(y)/3)/(y^3+log(y));
+
+Tx=x/z*diff(z,x)
+fsurf(Tx, [1,10,1,10]);
+Tx2=x/(x+sin(y)/3);
+fsurf(Tx2, [1,10,1,10]);
+
+Ty=y/z*diff(z,y)
+Ty2=(y*cos(y))/(3*(x+sin(y)/3))-(1+3*y^3)/(y^3+log(y));
+fsurf(Ty, [1,10,1,10]);
+fsurf(Ty2, [1,10,1,10]);
+
+zs=subs(z,sin(y),v);
+Ksin=v/zs*diff(zs,v);
+Ksin=subs(Ksin,v,sin(y))
+fsurf(Ksin, [1,10,1,10]);
+Ksin2=(sin(y)/3)/(x+sin(y)/3);
+fsurf(Ksin2, [1,10,1,10]);
+
+zd=subs(z,sin(y)/3,v);
+Kdiv3=v/zd*diff(zd,v);
+Kdiv3=subs(Kdiv3,v,sin(y)/3)
+fsurf(Kdiv3, [1,10,1,10]);
+Kdiv32=(sin(y)/3)/(x+sin(y)/3);
+fsurf(Kdiv32, [1,10,1,10]);
+
+zp=subs(z,y^3,v);
+Kpow=v/zp*diff(zp,v);
+Kpow=subs(Kpow,v,y^3)
+fsurf(Kpow, [1,10,1,10]);
+Kpow2=-y^3/(y^3+log(y));
+fsurf(Kpow2, [1,10,1,10]);
+
+zdiv=subs(z,(x+sin(y)/3)/(y^3+log(y)),v);
+Kdiv=v/zdiv*diff(zdiv,v);
+Kdiv=subs(Kdiv,v,(x+sin(y)/3)/(y^3+log(y)))
+fsurf(Kdiv, [1,10,1,10]);
+
+zs1=subs(z,(x+sin(y)/3),v);
+Ksum1=v/zs1*diff(zs1,v);
+Ksum1=subs(Ksum1,v,(x+sin(y)/3))
+fsurf(Ksum1,[1,10,1,10]);
+
+zs2=subs(z,(y^3+log(y)),v);
+Ksum2=v/zs2*diff(zs2,v);
+Ksum2=subs(Ksum2,v,(y^3+log(y)))
+fsurf(Ksum2,[1,10,1,10]);
+
+zl=log(y);
+zl=subs(z,log(y),v);
+Kln=v/zl*diff(zl,v);
+Kln=subs(Kln,v,log(y))
+fsurf(Kln,[1,10,1,10]);
+
+%===========================TASK 2===========================
+
+task2=abs(Tx)+abs(Ty)+abs(Kdiv)+abs(Kdiv3)+abs(Kln)+abs(Kpow)+abs(Ksin)+abs(Ksum1)+abs(Ksum2);
+eps=3.*10.^(-13);
+
+task2num=matlabFunction(task2);
+[X,Y]=meshgrid(1:0.30:10,1:0.30:10);
+task2Matrix=task2num(X,Y);
+
+surf(X,Y,task2Matrix);
+disp("Maximum value of z for matrix precise to 0.30")
+zmax=max(max(task2Matrix))
+
+%========check for a more precise matrix====================
+[X,Y]=meshgrid(1:0.20:10,1:0.20:10);
+task2Matrix2=task2num(X,Y);
+disp("Maximum value of z for more precise matrix (to 0.20)")
+zmax2=max(max(task2Matrix2))
+disp("Obtained values 'zmax' and 'zmax2' are the same, 0.30 is precise enough")
+%obtained values are the same
+%final error calculation:
+disp("Delta z supremum 1 value:")
+DeltaZsup1=zmax*eps
+%===========================TASK 3===========================
+
+bin=de2bi(0:511);
+bin(bin==0)=-1;
+task1=@(x,y)(x + sin(y)./3)./(y.^3 + log(y)); 
+DeltaZsup2=0;
+
+for i=1:512
+    task3=@(x,y)((x.*(1+eps.*bin(i,1))+(sin(y.*(1+eps.*bin(i,2)))/3).*(1+eps.*bin(i,3)).*(1+eps.*bin(i,4))).*(1+eps.*bin(i,5)).*(1+eps.*bin(i,6)))./((((y.*(1+eps.*bin(i,7)))^3).*(1+eps.*bin(i,7))+log(y.*(1+eps.*bin(i,2)).*(1+eps.*bin(i,9)))).*(1+eps.*bin(i,8)));    
+    for j=1:0.30:10 
+        for k=1:0.30:10
+            if DeltaZsup2 < abs((task3(j,k)-task1(j,k))/task1(j,k))
+                DeltaZsup2 = abs((task3(j,k)-task1(j,k))/task1(j,k));
+            end
+        end
+    end
+end
+disp("Delta z supremum 2 value:")
+DeltaZsup2
