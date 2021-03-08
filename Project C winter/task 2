@@ -1,0 +1,191 @@
+clc
+clear all
+
+%[x1, x2, t] = RK4(0.09);
+%printRK4vsTime;
+%[x1, x2, t] = P5EC5E(0.001);
+%printP5EC5EvsTime
+
+function [start, finish, initialx1, initialx2, f1, f2] = getData
+
+start = 0;
+finish = 20;
+initialx1 = -0.001;
+initialx2 = -0.02;
+
+f1 = @(t, x1, x2)(x2 +x1*(0.5 - (x1)^2 - (x2)^2));
+f2 = @(t, x1, x2)(-x1 + x2*(0.5 - (x1)^2 - (x2)^2));
+
+end
+
+function [x1, x2, t] = RK4(h)
+
+[start, finish, initialx1, initialx2, f1, f2] = getData;
+
+%to use when running P5EC5E
+finish = (5*h)-start;
+
+t = start:h:finish;
+x1(1) = initialx1;
+x2(1) = initialx2;
+
+for i = 1:(length(t)-1)
+    k11 = f1(t(i), x1(i), x2(i));
+    k12 = f2(t(i), x1(i), x2(i));
+    k21 = f1(t(i)+0.5*h, x1(i)+0.5*h*k11, x2(i)+0.5*h*k12);
+    k22 = f2(t(i)+0.5*h, x1(i)+0.5*h*k11, x2(i)+0.5*h*k12);
+    k31 = f1(t(i)+0.5*h, x1(i)+0.5*h*k21, x2(i)+0.5*h*k22);
+    k32 = f2(t(i)+0.5*h, x1(i)+0.5*h*k21, x2(i)+0.5*h*k22);
+    k41 = f1(t(i)+h, x1(i)+h*k31, x2(i)+h*k32);
+    k42 = f2(t(i)+h, x1(i)+h*k31, x2(i)+h*k32);
+    
+    x1(i+1) = x1(i) + 1/6*h*(k11 + 2*k21 + 2*k31 + k41);
+    x2(i+1) = x2(i) + 1/6*h*(k12 + 2*k22 + 2*k32 + k42);
+end
+
+% hold on
+% plot(x1, x2,'color',[1, 0, 0])
+% 
+% odeoptions = odeset('RelTol', 10e-10, 'AbsTol', 10e-10);
+% [t, x] = ode45(@(t,x) [x(2)+x(1)*(0.5-x(1)^2-x(2)^2); -x(1)+x(2)*(0.5-x(1)^2-x(2)^2)], [start, finish], [initialx1,initialx2], odeoptions);
+% plot(x(:,1),x(:,2),'color',[0, 0, 1])
+% xlabel("x1")
+% ylabel("x2")
+% legend("RK4", "ODE45")
+% X = ['RK4 vs ODE45 for step-size h = ', num2str(h)];
+% title(X)
+% grid on
+% hold off
+
+end
+
+function printRK4vsTime
+
+[start, finish, initialx1, initialx2, ~, ~] = getData
+
+[x1s, x2s, ts] = RK4(0.09);
+[x1b, x2b, tb] = RK4(0.3);
+
+hold on
+plot(ts, x1s)
+plot(tb, x1b)
+% plot(ts, x2s)
+% plot(tb, x2b)
+
+odeoptions = odeset('RelTol', 10e-10, 'AbsTol', 10e-10);
+[t, x] = ode45(@(t,x) [x(2)+x(1)*(0.5-x(1)^2-x(2)^2); -x(1)+x(2)*(0.5-x(1)^2-x(2)^2)], [start, finish], [initialx1,initialx2], odeoptions);
+
+plot(t,x(:,1))
+%plot(t,x(:,2))
+legend("h=0.09", "h=0.3", "ode45")
+title("Solution vs time for optimal and larger step-sizes")
+xlabel("t")
+ylabel("x1")
+%ylabel("x2")
+hold off
+
+end
+
+
+
+function [x1, x2, t] = P5EC5E(h)
+
+[start, finish, initialx1, initialx2, f1, f2] = getData;
+k = 5;
+
+betaEx = [1901/720, -2774/720, 2616/720, -1274/720, 251/720];
+betaIm = [475/1440, 1427/1440, -798/1440, 482/1440, -173/1440, 27/1440];
+[x1,x2,t] = RK4(h);
+
+for n = 6:ceil(finish-start)/h
+%for n = 6:1
+   
+    t(1+n) = t(n)+h;
+    
+    sumEx1 = 0;
+    sumEx2 = 0;
+    
+    for j = 1:k
+       sumEx1 = sumEx1 + betaEx(j) * f1(t(n-j), x1(n-j), x2(n-j));
+       sumEx2 = sumEx2 + betaEx(j) * f2(t(n-j), x1(n-j), x2(n-j));
+    end
+    
+    sumIm1 = 0;
+    sumIm2 = 0;
+    
+    for j = 2:k                   
+       sumIm1 = sumIm1 + betaIm(j) * f1(t(n-j), x1(n-j), x2(n-j));
+       sumIm2 = sumIm2 + betaIm(j) * f2(t(n-j), x1(n-j), x2(n-j));
+    end
+    
+    %P prediction
+    x1(n+1) = x1(n) + h*sumEx1;
+    x2(n+1) = x2(n) + h*sumEx2;
+    
+    %E evaluation
+    fn1 = f1(t(n+1), x1(n+1), x2(n+1));
+    fn2 = f2(t(n+1), x1(n+1), x2(n+1));
+    
+    %C correction
+    x1(n+1) = x1(n) + h*sumIm1 + h*betaIm(1)*fn1; 
+    x2(n+1) = x2(n) + h*sumIm2 + h*betaIm(1)*fn2; 
+    
+    %E evaluation
+    fn1 = f1(t(n+1), x1(n+1), x2(n+1));
+    fn2 = f2(t(n+1), x1(n+1), x2(n+1));
+end
+
+% plot(x1, x2,'color',[1, 0, 0])
+% hold on;
+% 
+% odeoptions = odeset('RelTol', 10e-10, 'AbsTol', 10e-10);
+% [t, x] = ode45(@(t,x) [x(2)+x(1)*(0.5-x(1)^2-x(2)^2); -x(1)+x(2)*(0.5-x(1)^2-x(2)^2)], [start, finish], [initialx1,initialx2], odeoptions);
+% plot(x(:,1), x(:,2),'color',[0, 0, 1]);
+% 
+% X = ['P5EC5E vs ODE45 for step-size h = ', num2str(h)];
+% title(X)
+% xlabel("x1");
+% ylabel("x2");
+% legend("P5EC5E", "ode45");
+% grid on;
+% hold off;
+
+end
+
+function printP5EC5EvsTime
+
+[start, finish, initialx1, initialx2, ~, ~] = getData
+
+[x1s, x2s, ts] = P5EC5E(0.0001);
+[x1b, x2b, tb] = P5EC5E(0.01);
+
+hold on
+% plot(ts, x1s)
+% plot(tb, x1b)
+plot(ts, x2s)
+plot(tb, x2b)
+
+odeoptions = odeset('RelTol', 10e-10, 'AbsTol', 10e-10);
+[t, x] = ode45(@(t,x) [x(2)+x(1)*(0.5-x(1)^2-x(2)^2); -x(1)+x(2)*(0.5-x(1)^2-x(2)^2)], [start, finish], [initialx1,initialx2], odeoptions);
+% plot(t,x(:,1))
+plot(t,x(:,2))
+
+legend("h=0.0001", "h=0.01", "ode45")
+title("Solution vs time for optimal and larger step-sizes")
+xlabel("t")
+% ylabel("x1")
+ylabel("x2")
+hold off
+
+end
+
+
+
+
+
+
+
+
+
+
+
