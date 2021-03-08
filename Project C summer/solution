@@ -1,0 +1,169 @@
+close all
+clear
+clc
+%===========================TASK 1===========================
+A=[0,1,-1;0,1,-2;300,-21,-38];
+b=[0;0;-1];
+c=[320;-89;-8];
+
+h=0.001;
+t=0:h:5;
+v0=[0;0;0];
+
+x1=@(t) 1*(t>0);
+x2=@(t) exp(-t)*(t>0);
+y=@(v) c'*v;
+
+dvdt1=@(t,v) A*v + b*x1(t);
+dvdt2=@(t,v) A*v + b*x2(t);
+
+%===========================TASK 2===========================
+
+parameters = odeset('AbsTol', eps, 'RelTol', 2.22045e-14);
+[t1, v1] = ode45(dvdt1, t, v0, parameters);
+[t2, v2] = ode45(dvdt2, t, v0, parameters);
+yexact1=c'*v1';
+yexact2=c'*v2';
+
+figure(1)
+plot(t1,y(v1'));
+%plot(t1, v1(:,1));
+%plot(t1, v1(:,2));
+%plot(t1, v1(:,3));
+hold on;
+title('Solution obtained with ode45 method for x1');
+xlabel('t');
+ylabel('y(v1T)');
+hold off;
+
+figure(2)
+plot(t2,y(v2'));
+%plot(t2, v2(:,1));
+%plot(t2, v2(:,2));
+%plot(t2, v2(:,3));
+hold on;
+title('Solution obtained with ode45 method for x2');
+xlabel('t');
+ylabel('y(v2T)');
+hold off;
+
+%===========================TASK 3===========================
+%Adams-Bashforth method
+
+h=0.008;
+hmax=0.02;
+beta4=[55/24 -59/24 37/24 -9/24];
+counter=1;
+
+while h<hmax
+    vb1(:,1)=v0;
+    vb2(:,1)=v0;
+
+    vb1(:,2)=vb1(:,1)+h*1*(A*vb1(:,1) + b*x1(t(1)));
+    vb2(:,2)=vb2(:,1)+h*(A*vb2(:,1) + b*x2(t(1)));
+
+    vb1(:,3)=vb1(:,2)+h*(3/2)*(A*vb1(:,2) + b*x1(t(1)))+h*(-1/2)*(A*vb1(:,1) + b*x1(t(1)));
+    vb2(:,3)=vb2(:,2)+h*(3/2)*(A*vb2(:,2) + b*x2(t(1)))+h*(-1/2)*(A*vb2(:,1) + b*x2(t(1)));
+
+    vb1(:,4)=vb1(:,3)+h*(23/12)*(A*vb1(:,3) + b*x1(t(1)))+h*(-16/12)*(A*vb1(:,2) + b*x1(t(1)))+h*(5/12)*(A*vb1(:,1) + b*x1(t(1)));
+    vb2(:,4)=vb2(:,3)+h*(23/12)*(A*vb2(:,3) + b*x2(t(1)))+h*(-16/12)*(A*vb2(:,2) + b*x2(t(1)))+h*(5/12)*(A*vb2(:,1) + b*x2(t(1)));
+
+    for i=5:length(t)
+        k=1;
+        sum1=0;
+        sum2=0;
+        while k<=4
+            sum1=sum1+beta4(k)*(A*vb1(:,i-k)+b*x1(t(i-k)));
+            sum2=sum2+beta4(k)*(A*vb2(:,i-k)+b*x2(t(i-k)));
+            k=k+1;
+        end    
+        vb1(:,i)=vb1(:,i-1)+h*sum1;
+        vb2(:,i)=vb2(:,i-1)+h*sum2;
+    end
+    yb1=c'*vb1;
+    yb2=c'*vb2;
+    
+    deltab1(counter)=(norm(yb1-yexact1)/norm(yexact1));
+    deltab2(counter)=(norm(yb2-yexact2)/norm(yexact2));
+    deltab1inf(counter)=(norm(yb1-yexact1,"inf")/norm(yexact1,"inf"));
+    deltab2inf(counter)=(norm(yb2-yexact2,"inf")/norm(yexact2,"inf"));
+    hball(counter)=h;
+    h=h+0.001;
+    counter=counter+1;  
+end
+
+
+%Adams-Moulton method
+h=0.16;
+hmax=0.21;
+beta3 = [5/12 8/12 -1/12];
+counter=1;
+
+while h<hmax
+    vm1(:,1)=v0;
+    vm2(:,1)=v0;
+
+    vm1(:,2)=(eye(3)-h*(1/2)*A)\(vm1(:,1)+h*(1/2)*(2*b*x1(t(1))+A*vm1(:,1)));
+    vm2(:,2)=(eye(3)-h*(1/2)*A)\(vm2(:,1)+h*(1/2)*(2*b*x2(t(1))+A*vm2(:,1)));
+
+    for i=3:length(t)
+        vm1(:,i)=(eye(3)-h*beta3(1)*A)\(vm1(:,i-1)+h*beta3(1)*b*x1(t(i))+h*beta3(2)*(A*vm1(:,i-1)+b*x1(t(i-1)))+h*beta3(3)*(A*vm1(:,i-2)+b*x1(t(i-2))));
+        vm2(:,i)=(eye(3)-h*beta3(1)*A)\(vm2(:,i-1)+h*beta3(1)*b*x2(t(i))+h*beta3(2)*(A*vm2(:,i-1)+b*x2(t(i-1)))+h*beta3(3)*(A*vm2(:,i-2)+b*x2(t(i-2))));   
+    end
+    ym1=c'*vm1;
+    ym2=c'*vm2;
+    
+    deltam1(counter)=(norm(ym1-yexact1)/norm(yexact1));
+    deltam2(counter)=(norm(ym2-yexact2)/norm(yexact2));
+    deltam1inf(counter)=(norm(ym1-yexact1,"inf")/norm(yexact1,"inf"));
+    deltam2inf(counter)=(norm(ym2-yexact2,"inf")/norm(yexact2,"inf"));
+    hmall(counter)=h;
+    h=h+0.001;
+    counter=counter+1; 
+end
+
+%===========================PRINT GRAPHS===========================
+
+figure(3)
+semilogy(hball,deltab1,'-');
+title("\delta_{2}(h) for x_{1}(t) for Adams-Barforth method"); 
+ylabel("\delta_{2}(h)");
+xlabel("h");
+figure(4)
+semilogy(hball,deltab2,'-');
+title("\delta_{2}(h) for x_{2}(t) for Adams-Barforth method "); 
+ylabel("\delta_{2}(h)");
+xlabel("h");
+figure(5)
+semilogy(hball,deltab1inf,'-');
+title("\delta_{inf}(h) for x_{1}(t) for Adams-Barforth method"); 
+ylabel("\delta_{inf}(h)");
+xlabel("h");
+figure(6)
+semilogy(hball,deltab2inf,'-');
+title("\delta_{inf}(h) for x_{2}(t) for Adams-Barforth method"); 
+ylabel("\delta_{inf}(h)");
+xlabel("h");
+
+
+figure(7)
+semilogy(hmall,deltam1,'-');
+title("\delta_{2}(h) for x_{1}(t) for Adams-Moulton method"); 
+ylabel("\delta_{2}(h)");
+xlabel("h");
+figure(8)
+semilogy(hmall,deltam2,'-');
+title("\delta_{2}(h) for x_{2}(t) for Adams-Moulton method "); 
+ylabel("\delta_{2}(h)");
+xlabel("h");
+figure(9)
+semilogy(hmall,deltam1inf,'-');
+title("\delta_{inf}(h) for x_{1}(t) for Adams-Moulton method"); 
+ylabel("\delta_{inf}(h)");
+xlabel("h");
+figure(10)
+semilogy(hmall,deltam2inf,'-');
+title("\delta_{inf}(h) for x_{2}(t) for Adams-Moulton method"); 
+ylabel("\delta_{inf}(h)");
+xlabel("h");
+
