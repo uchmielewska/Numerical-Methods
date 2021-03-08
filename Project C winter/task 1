@@ -1,0 +1,158 @@
+close all
+clear
+clc
+
+%plotSolution
+%solvetask1
+
+
+function [x, y] = getData
+
+x = -5:1:5;
+y = [-32.4591, -20.2011, -12.1986, -4.6508, -1.1893, 0.6266, 0.5743, -0.3709, -1.2371, -3.4952, -4.3987];
+
+end
+
+function [G, v] = gramMatrix(x, y, n)
+
+G = zeros(n+1, n+1);
+v = zeros(n+1, 1);
+N = length(x);
+for i = 1:n+1
+    for k = 1:n+1
+        for j = 1:N
+            G(i, k) = G(i, k) + (x(1, j))^(i+k-2);
+        end        
+    end
+end
+
+for k = 1:n+1
+    for j = 1:N
+        v(k,1) = v(k,1) + (y(j)*(x(j)^(k-1)));
+    end
+end
+end
+
+function [Q, R] = QRfactorization(A);
+
+[m, n] = size(A);
+Q = zeros(m, n);
+R = zeros(n, n);
+d = zeros(1, n);
+
+% orthogonal columns of Q
+for i=1:n
+   Q(:, i) = A(:, i);
+   R(i, i) = 1;
+   d(i) = Q(:, i)' * Q(:, i);
+   
+   for j=i+1:n
+      R(i, j) = (Q(:, i)' * A(:, j)) / d(i);
+      A(:, j) = A(:, j) - R(i, j) * Q(:, i);
+   end
+   
+end
+
+% orthonormal columns of Q
+for i=1:n
+    dd = norm(Q(:, i));
+    Q(:, i) = Q(:, i) / dd;
+    R(i, i:n) = R(i, i:n) * dd;
+end
+
+end
+
+function [a, error, condNum] = solveNormalEq(G, v)
+
+[Q, R] = QRfactorization(G);
+d = Q' * v;
+
+n = length(v);
+a = zeros(n, 1);
+
+%back substitution
+for i = n:-1:1
+    a(i) = d(i)/R(i,i);
+    d(1:i-1) = d(1:i-1) - R(1:i-1,i)*a(i);
+end
+
+error = norm(G*a - v);
+condNum = cond(G);
+
+end
+
+function [error, condprint, orderprint] = solvetask1
+[x, y] = getData;
+
+for i=2:1:10
+    
+    [G, v] = gramMatrix(x, y, i);
+    [~, errorprint, cond] = solveNormalEq(G, v);
+    error(11-i) = errorprint;
+    condprint(i-1) = cond;
+end
+
+for i = 2:1:10
+   orderprint(i-1) = i;
+   errorprint = error(i-1);
+   semilogy(i, errorprint, 'r*')
+   hold on
+   disp(i);
+   disp(condprint(i-1));
+   disp(errorprint);
+end
+
+grid on
+title("Error vs. order of the polynomial")
+xlabel("order of the polynomial")
+ylabel("error")
+hold off
+
+end
+
+function plotSolution
+n=7;
+[x, y] = getData;
+  
+[G, v] = gramMatrix(x, y, n);
+[a, ~, ~] = solveNormalEq(G, v);
+    
+figure(n)
+plot(x, y, '*','color', [0.3010, 0.7450, 0.9330])
+hold on
+    
+X = ['Approximation polynomial - degree ', num2str(n)];
+title(X)
+syms x
+if n == 7
+    f = @(x)a(8)*x^7+a(7)*x^6+a(6)*x^5+a(5)*x^4 + a(4)*x^3 + a(3)*x^2 + a(2)*x + a(1);
+elseif n == 6
+    f = @(x)a(7)*x^6+a(6)*x^5+a(5)*x^4 + a(4)*x^3 + a(3)*x^2 + a(2)*x + a(1);
+elseif n == 5
+    f = @(x)a(6)*x^5+a(5)*x^4 + a(4)*x^3 + a(3)*x^2 + a(2)*x + a(1);
+elseif n == 4
+    f = @(x)a(5)*x^4 + a(4)*x^3 + a(3)*x^2 + a(2)*x + a(1);
+elseif n == 3
+    f = @(x)a(4)*x^3 + a(3)*x^2 + a(2)*x + a(1);
+elseif n == 2
+    f = @(x)a(3)*x^2 + a(2)*x + a(1);
+end
+    
+fplot(f,'color',[0, 0, 1]);
+grid on
+xticks(-5:1:5);
+hold off
+
+end
+
+
+
+
+
+
+
+
+
+
+
+
